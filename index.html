@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Hanabi Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --card-width: 70px;
+            --red: #ff6b6b;
+            --blue: #4dabf7;
+            --green: #51cf66;
+            --yellow: #ffd43b;
+            --white: #f8f9fa;
+            --rainbow: linear-gradient(45deg, #ff6b6b, #ffd43b, #51cf66, #4dabf7, #cc5de8);
+            --background: #2b2d42;
+            --panel: #3d405b;
+            --accent: #3a86ff;
+            --remove: #ff9f43;
+            --undo: #6c757d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: var(--background);
+            color: white;
+            user-select: none;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            padding-bottom: 20px;
+        }
+        
+        /* Start Screen */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        #start-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        #start-screen h1 i {
+            color: var(--yellow);
+        }
+        
+        .start-panel {
+            background: var(--panel);
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        .option-group {
+            margin-bottom: 25px;
+        }
+        
+        .option-group h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--accent);
+            font-size: 1.3rem;
+        }
+        
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .option-btn {
+            flex: 1;
+            padding: 15px 5px;
+            border: none;
+            border-radius: 12px;
+            background: #495057;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .option-btn.selected {
+            background: var(--accent);
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.5);
+        }
+        
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+        
+        #start-btn {
+            padding: 18px;
+            width: 100%;
+            border: none;
+            border-radius: 15px;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            font-size: 1.3rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        
+        #start-btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+        
+        header {
+            text-align: center;
+            padding: 15px 0;
+            margin-bottom: 10px;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        /* Card Styles */
+        .hand {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            min-height: 120px;
+        }
+        
+        .card-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .card {
+            width: var(--card-width);
+            height: calc(var(--card-width) * 1.4);
+            border-radius: 8px;
+            background: #444;
+            position: relative;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card.selected {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+        }
+        
+        .color-section, .number-section {
+            height: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+        
+        .color-section {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* Color Classes */
+        .red { background: var(--red); }
+        .blue { background: var(--blue); }
+        .green { background: var(--green); }
+        .yellow { background: var(--yellow); color: #333; }
+        .white { background: var(--white); color: #333; }
+        .rainbow { background: var(--rainbow); }
+        
+        /* Excluded info */
+        .excluded-info {
+            font-size: 0.8rem;
+            height: 20px;
+            color: #aaa;
+            text-align: center;
+            width: 100%;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        /* Rainbow indicator */
+        .rainbow-indicator {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--rainbow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        button {
+            padding: 16px 5px;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        button:active {
+            transform: scale(0.96);
+        }
+        
+        #remove-btn { background: var(--remove); }
+        #undo-btn { background: var(--undo); }
+        #menu-btn { background: #5c636a; }
+        
+        .clue-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .clue-btn {
+            padding: 12px;
+            min-width: 50px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            background: #495057;
+            transition: all 0.2s;
+        }
+        
+        .clue-btn.color-clue {
+            font-size: 1.4rem;
+        }
+        
+        .clue-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: fadeInOut 2.5s ease-in-out forwards;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -20px); }
+            10% { opacity: 1; transform: translate(-50%, 0); }
+            90% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 380px) {
+            :root {
+                --card-width: 65px;
+            }
+            
+            .hand {
+                gap: 8px;
+            }
+            
+            .clue-btn {
+                padding: 10px;
+                min-width: 45px;
+                font-size: 1.1rem;
+            }
+            
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls button {
+                grid-column: span 1;
+            }
+            
+            #menu-btn {
+                grid-column: span 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1><i class="fas fa-fire"></i> Hanabi Tracker</h1>
+            
+            <div class="start-panel">
+                <div class="option-group">
+                    <h2>Number of Cards</h2>
+                    <div class="options">
+                        <button class="option-btn" id="cards-4">4 Cards</button>
+                        <button class="option-btn selected" id="cards-5">5 Cards</button>
+                    </div>
+                </div>
+                
+                <div class="option-group">
+                    <h2>Rainbow Cards</h2>
+                    <div class="options">
+                        <button class="option-btn" id="no-rainbow">No</button>
+                        <button class="option-btn selected" id="with-rainbow">Yes</button>
+                    </div>
+                </div>
+                
+                <button id="start-btn">Start Game</button>
+            </div>
+        </div>
+        
+        <!-- Game Screen -->
+        <div id="game-screen">
+            <header>
+                <h1><i class="fas fa-fire"></i> Hanabi Tracker</h1>
+            </header>
+            
+            <div class="hand" id="hand">
+                <!-- Cards will be generated here -->
+            </div>
+            
+            <div class="clue-controls">
+                <button class="clue-btn color-clue" data-color="red">🔴</button>
+                <button class="clue-btn color-clue" data-color="blue">🔵</button>
+                <button class="clue-btn color-clue" data-color="green">🟢</button>
+                <button class="clue-btn color-clue" data-color="yellow">🟡</button>
+                <button class="clue-btn color-clue" data-color="white">⚪</button>
+                <button class="clue-btn" data-number="1">1</button>
+                <button class="clue-btn" data-number="2">2</button>
+                <button class="clue-btn" data-number="3">3</button>
+                <button class="clue-btn" data-number="4">4</button>
+                <button class="clue-btn" data-number="5">5</button>
+            </div>
+            
+            <div class="controls">
+                <button id="remove-btn"><i class="fas fa-trash"></i> Remove</button>
+                <button id="undo-btn"><i class="fas fa-undo"></i> Undo</button>
+                <button id="menu-btn"><i class="fas fa-bars"></i> Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const state = {
+            cards: [],
+            selectedCards: [],
+            colors: ['red', 'blue', 'green', 'yellow', 'white'],
+            rainbowEnabled: true,
+            handSize: 5,
+            nextId: 0,
+            history: []
+        };
+
+        // Notification system
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 2500);
+        }
+
+        // Initialize game
+        function initGame() {
+            createHand(state.handSize);
+            render();
+        }
+
+        // Save current state to history
+        function saveState() {
+            // Deep clone the state
+            const stateCopy = JSON.parse(JSON.stringify(state));
+            state.history.push(stateCopy);
+        }
+
+        // Undo last action
+        function undo() {
+            if (state.history.length === 0) return;
+            
+            // Restore the previous state
+            const prevState = state.history.pop();
+            
+            // Update the current state
+            state.cards = prevState.cards;
+            state.selectedCards = prevState.selectedCards;
+            state.nextId = prevState.nextId;
+            
+            render();
+        }
+
+        // Create player hand
+        function createHand(count) {
+            state.cards = [];
+            for (let i = 0; i < count; i++) {
+                state.cards.push(createNewCard());
+            }
+        }
+
+        // Create a new card
+        function createNewCard() {
+            const colors = [...state.colors];
+            if (state.rainbowEnabled) colors.push('rainbow');
+            
+            return {
+                id: state.nextId++,
+                color: null,
+                number: null,
+                colorKnown: false,
+                numberKnown: false,
+                possibleColors: [...colors],
+                possibleNumbers: [1, 2, 3, 4, 5],
+                excludedColors: [],
+                excludedNumbers: [],
+                hintedColors: [] // Track all colors hinted for this card
+            };
+        }
+
+        // Check if clue is possible
+        function isCluePossible(clueType, clueValue) {
+            for (const cardId of state.selectedCards) {
+                const card = state.cards.find(c => c.id === cardId);
+                if (!card) continue;
+                
+                if (clueType === 'color') {
+                    // For rainbow cards, any color clue is possible
+                    if (card.possibleColors.includes('rainbow')) {
+                        continue;
+                    }
+                    
+                    if (!card.possibleColors.includes(clueValue)) {
+                        return false;
+                    }
+                } else {
+                    const numValue = parseInt(clueValue);
+                    if (!card.possibleNumbers.includes(numValue)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Render game state
+        function render() {
+            const handElement = document.getElementById('hand');
+            handElement.innerHTML = '';
+            
+            state.cards.forEach((card) => {
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card-container';
+                
+                const cardElement = document.createElement('div');
+                cardElement.className = `card ${state.selectedCards.includes(card.id) ? 'selected' : ''}`;
+                cardElement.dataset.id = card.id;
+                
+                // Add rainbow indicator if rainbow is possible and not confirmed
+                if (card.possibleColors.includes('rainbow') && !card.colorKnown && card.color !== 'rainbow') {
+                    const rainbowIndicator = document.createElement('div');
+                    rainbowIndicator.className = 'rainbow-indicator';
+                    rainbowIndicator.textContent = 'R';
+                    cardElement.appendChild(rainbowIndicator);
+                }
+                
+                const colorSection = document.createElement('div');
+                colorSection.className = 'color-section';
+                const numberSection = document.createElement('div');
+                numberSection.className = 'number-section';
+                
+                // Update color section
+                if (card.color === 'rainbow') {
+                    // Rainbow confirmed - show rainbow background
+                    colorSection.textContent = 'RB';
+                    colorSection.style.background = 'var(--rainbow)';
+                } else if (card.color) {
+                    // Show the hinted color
+                    colorSection.textContent = card.color.charAt(0).toUpperCase();
+                    colorSection.classList.add(card.color);
+                } else {
+                    if (card.possibleColors.length === 1) {
+                        const color = card.possibleColors[0];
+                        if (color === 'rainbow') {
+                            colorSection.textContent = 'RB';
+                            colorSection.style.background = 'var(--rainbow)';
+                        } else {
+                            colorSection.textContent = color.charAt(0).toUpperCase();
+                            colorSection.classList.add(color);
+                        }
+                    } else {
+                        colorSection.textContent = '?';
+                        colorSection.style.backgroundColor = '#5c636a';
+                    }
+                }
+                
+                // Update number section
+                if (card.number) {
+                    numberSection.textContent = card.number;
+                } else {
+                    if (card.possibleNumbers.length === 1) {
+                        numberSection.textContent = card.possibleNumbers[0];
+                    } else {
+                        numberSection.textContent = '?';
+                        numberSection.style.backgroundColor = '#5c636a';
+                    }
+                }
+                
+                // Highlight if only one possibility remains
+                if (!card.colorKnown && card.possibleColors.length === 1) {
+                    colorSection.style.fontWeight = '800';
+                }
+                
+                if (!card.numberKnown && card.possibleNumbers.length === 1) {
+                    numberSection.style.fontWeight = '800';
+                }
+                
+                cardElement.appendChild(colorSection);
+                cardElement.appendChild(numberSection);
+                
+                // Add excluded info display (colors and numbers)
+                const excludedDiv = document.createElement('div');
+                excludedDiv.className = 'excluded-info';
+                
+                // Calculate excluded colors and numbers
+                const excludedColors = state.colors.filter(color => 
+                    !card.possibleColors.includes(color) && 
+                    !card.colorKnown
+                );
+                
+                const excludedNumbers = [1, 2, 3, 4, 5].filter(num => 
+                    !card.possibleNumbers.includes(num) && 
+                    !card.numberKnown
+                );
+                
+                // Map to abbreviations
+                const excludedAbbr = [];
+                
+                for (const color of excludedColors) {
+                    if (color === 'red') excludedAbbr.push('R');
+                    else if (color === 'blue') excludedAbbr.push('B');
+                    else if (color === 'green') excludedAbbr.push('G');
+                    else if (color === 'yellow') excludedAbbr.push('Y');
+                    else if (color === 'white') excludedAbbr.push('W');
+                }
+                
+                for (const num of excludedNumbers) {
+                    excludedAbbr.push(num.toString());
+                }
+                
+                if (excludedAbbr.length > 0) {
+                    excludedDiv.textContent = `Not ${excludedAbbr.join('')}`;
+                }
+                
+                cardContainer.appendChild(cardElement);
+                cardContainer.appendChild(excludedDiv);
+                handElement.appendChild(cardContainer);
+            });
+        }
+
+        // Give a clue to selected cards and exclude it from others
+        function giveClue(clueType, clueValue) {
+            if (state.selectedCards.length === 0) {
+                showNotification("Select at least one card first");
+                return;
+            }
+            
+            // Check if clue is possible
+            if (!isCluePossible(clueType, clueValue)) {
+                showNotification("Impossible clue for selected cards");
+                return;
+            }
+            
+            saveState();
+            
+            state.cards.forEach(card => {
+                if (state.selectedCards.includes(card.id)) {
+                    // For selected cards
+                    if (clueType === 'color') {
+                        // Track this color hint
+                        if (!card.hintedColors.includes(clueValue)) {
+                            card.hintedColors.push(clueValue);
+                        }
+                        
+                        // Check if we have multiple color hints (rainbow confirmed)
+                        if (card.hintedColors.length > 1 && state.rainbowEnabled) {
+                            card.color = 'rainbow';
+                            card.colorKnown = true;
+                            card.possibleColors = ['rainbow'];
+                        } else {
+                            // Set the displayed color to the hinted color
+                            card.color = clueValue;
+                            
+                            // If rainbow is still possible, don't set as known
+                            if (card.possibleColors.includes('rainbow')) {
+                                card.colorKnown = false;
+                                card.possibleColors = [clueValue, 'rainbow'];
+                            } else {
+                                card.colorKnown = true;
+                                card.possibleColors = [clueValue];
+                            }
+                        }
+                    } else {
+                        card.number = parseInt(clueValue);
+                        card.numberKnown = true;
+                        card.possibleNumbers = [parseInt(clueValue)];
+                    }
+                } else {
+                    // For non-selected cards: remove the clue value from possibilities
+                    if (clueType === 'color') {
+                        const index = card.possibleColors.indexOf(clueValue);
+                        if (index >= 0) {
+                            card.possibleColors.splice(index, 1);
+                        }
+                        
+                        // Also remove rainbow from non-selected cards
+                        if (state.rainbowEnabled) {
+                            const rainbowIndex = card.possibleColors.indexOf('rainbow');
+                            if (rainbowIndex >= 0) {
+                                card.possibleColors.splice(rainbowIndex, 1);
+                            }
+                        }
+                    } else {
+                        const numValue = parseInt(clueValue);
+                        const index = card.possibleNumbers.indexOf(numValue);
+                        if (index >= 0) {
+                            card.possibleNumbers.splice(index, 1);
+                        }
+                    }
+                }
+            });
+            
+            state.selectedCards = [];
+            render();
+        }
+
+        // Remove a card (play or discard)
+        function removeCard() {
+            if (state.selectedCards.length !== 1) {
+                showNotification("Select exactly one card to remove");
+                return;
+            }
+
+            saveState();
+            
+            const cardId = state.selectedCards[0];
+            const cardIndex = state.cards.findIndex(c => c.id === cardId);
+            if (cardIndex === -1) return;
+
+            // Remove the card
+            state.cards.splice(cardIndex, 1);
+            
+            // Add a new card from the deck
+            const newCard = createNewCard();
+            state.cards.push(newCard);
+            
+            state.selectedCards = [];
+            render();
+        }
+
+        // Reset the game
+        function resetGame() {
+            state.selectedCards = [];
+            state.nextId = 0;
+            state.history = [];
+            createHand(state.handSize);
+            render();
+        }
+
+        // Show start screen
+        function showStartScreen() {
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('game-screen').style.display = 'none';
+            resetGame();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Start screen options
+            document.getElementById('cards-4').addEventListener('click', () => {
+                document.getElementById('cards-4').classList.add('selected');
+                document.getElementById('cards-5').classList.remove('selected');
+                state.handSize = 4;
+            });
+            
+            document.getElementById('cards-5').addEventListener('click', () => {
+                document.getElementById('cards-5').classList.add('selected');
+                document.getElementById('cards-4').classList.remove('selected');
+                state.handSize = 5;
+            });
+            
+            document.getElementById('no-rainbow').addEventListener('click', () => {
+                document.getElementById('no-rainbow').classList.add('selected');
+                document.getElementById('with-rainbow').classList.remove('selected');
+                state.rainbowEnabled = false;
+            });
+            
+            document.getElementById('with-rainbow').addEventListener('click', () => {
+                document.getElementById('with-rainbow').classList.add('selected');
+                document.getElementById('no-rainbow').classList.remove('selected');
+                state.rainbowEnabled = true;
+            });
+            
+            // Start game button
+            document.getElementById('start-btn').addEventListener('click', () => {
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                initGame();
+            });
+            
+            // Card selection
+            document.getElementById('hand').addEventListener('click', (e) => {
+                const cardElement = e.target.closest('.card');
+                if (!cardElement) return;
+                
+                const cardId = parseInt(cardElement.dataset.id);
+                const index = state.selectedCards.indexOf(cardId);
+                
+                if (index >= 0) {
+                    state.selectedCards.splice(index, 1);
+                } else {
+                    state.selectedCards.push(cardId);
+                }
+                
+                render();
+            });
+            
+            // Clue buttons
+            document.querySelectorAll('.clue-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const clueType = btn.dataset.color ? 'color' : 'number';
+                    const clueValue = btn.dataset.color || btn.dataset.number;
+                    giveClue(clueType, clueValue);
+                });
+            });
+            
+            // Action buttons
+            document.getElementById('remove-btn').addEventListener('click', removeCard);
+            document.getElementById('undo-btn').addEventListener('click', undo);
+            document.getElementById('menu-btn').addEventListener('click', showStartScreen);
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
