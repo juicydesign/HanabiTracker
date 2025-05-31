@@ -1,0 +1,2 @@
+# HanabiTracker
+Hanabi Hint Tracker
