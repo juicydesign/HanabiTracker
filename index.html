@@ -448,31 +448,27 @@
             createHand(state.handSize);
             render();
         }
-
-        // Save current state to history
         function saveState() {
-            // Deep clone the state
-            const stateCopy = JSON.parse(JSON.stringify(state));
+            // Deep clone only the cards and other necessary fields, NOT the history
+            const stateCopy = {
+                cards: JSON.parse(JSON.stringify(state.cards)), // deep clone cards
+                selectedCards: [...state.selectedCards],
+                nextId: state.nextId
+            };
             state.history.push(stateCopy);
-            
-            // Enforce maximum history length
+
+            // Limit history size
             if (state.history.length > MAX_HISTORY) {
-                state.history.shift(); // Remove oldest entry
+                state.history.shift();
             }
         }
 
-        // Undo last action
         function undo() {
             if (state.history.length === 0) return;
-            
-            // Restore the previous state
             const prevState = state.history.pop();
-            
-            // Update the current state
             state.cards = prevState.cards;
             state.selectedCards = prevState.selectedCards;
             state.nextId = prevState.nextId;
-            
             render();
         }
 
