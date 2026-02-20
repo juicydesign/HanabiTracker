@@ -6,6 +6,7 @@
     <title>Hanabi Tracker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* (keep all existing CSS exactly as before) */
         :root {
             --card-width: 70px;
             --red: #ff6b6b;
@@ -428,6 +429,8 @@
             history: []
         };
 
+        const MAX_HISTORY = 10; // Limit history to prevent memory issues
+
         // Notification system
         function showNotification(message) {
             const notification = document.createElement('div');
@@ -451,6 +454,11 @@
             // Deep clone the state
             const stateCopy = JSON.parse(JSON.stringify(state));
             state.history.push(stateCopy);
+            
+            // Enforce maximum history length
+            if (state.history.length > MAX_HISTORY) {
+                state.history.shift(); // Remove oldest entry
+            }
         }
 
         // Undo last action
