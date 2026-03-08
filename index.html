@@ -6,7 +6,7 @@
     <title>Hanabi Tracker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* (keep all existing CSS exactly as before) */
+        /* Keep existing CSS (same as previous version) */
         :root {
             --card-width: 70px;
             --red: #ff6b6b;
@@ -381,6 +381,14 @@
                         <button class="option-btn selected" id="with-rainbow">Yes</button>
                     </div>
                 </div>
+
+                <div class="option-group">
+                    <h2>Black Cards (Gunpowder)</h2>
+                    <div class="options">
+                        <button class="option-btn" id="no-black">No</button>
+                        <button class="option-btn selected" id="with-black">Yes</button>
+                    </div>
+                </div>
                 
                 <button id="start-btn">Start Game</button>
             </div>
@@ -424,12 +432,13 @@
             selectedCards: [],
             colors: ['red', 'blue', 'green', 'yellow', 'white'],
             rainbowEnabled: true,
+            blackCardsEnabled: true,  // default Yes for black cards
             handSize: 5,
             nextId: 0,
             history: []
         };
 
-        const MAX_HISTORY = 10; // Limit history to prevent memory issues
+        const MAX_HISTORY = 50; // Limit history to prevent memory issues
 
         // Notification system
         function showNotification(message) {
@@ -448,21 +457,22 @@
             createHand(state.handSize);
             render();
         }
+
+        // Save current state to history (only essential data, no recursion)
         function saveState() {
-            // Deep clone only the cards and other necessary fields, NOT the history
             const stateCopy = {
-                cards: JSON.parse(JSON.stringify(state.cards)), // deep clone cards
+                cards: JSON.parse(JSON.stringify(state.cards)),
                 selectedCards: [...state.selectedCards],
                 nextId: state.nextId
             };
             state.history.push(stateCopy);
-
-            // Limit history size
+            
             if (state.history.length > MAX_HISTORY) {
                 state.history.shift();
             }
         }
 
+        // Undo last action
         function undo() {
             if (state.history.length === 0) return;
             const prevState = state.history.pop();
@@ -560,7 +570,8 @@
                     colorSection.textContent = card.color.charAt(0).toUpperCase();
                     colorSection.classList.add(card.color);
                 } else {
-                    if (card.possibleColors.length === 1) {
+                    // If black cards are enabled, we never auto-assign a color even if only one possibility remains
+                    if (!state.blackCardsEnabled && card.possibleColors.length === 1) {
                         const color = card.possibleColors[0];
                         if (color === 'rainbow') {
                             colorSection.textContent = 'RB';
@@ -587,8 +598,8 @@
                     }
                 }
                 
-                // Highlight if only one possibility remains
-                if (!card.colorKnown && card.possibleColors.length === 1) {
+                // Highlight if only one possibility remains (but only if black cards are disabled OR we already show the color)
+                if (!card.colorKnown && card.possibleColors.length === 1 && !state.blackCardsEnabled) {
                     colorSection.style.fontWeight = '800';
                 }
                 
@@ -780,6 +791,18 @@
                 document.getElementById('with-rainbow').classList.add('selected');
                 document.getElementById('no-rainbow').classList.remove('selected');
                 state.rainbowEnabled = true;
+            });
+
+            document.getElementById('no-black').addEventListener('click', () => {
+                document.getElementById('no-black').classList.add('selected');
+                document.getElementById('with-black').classList.remove('selected');
+                state.blackCardsEnabled = false;
+            });
+            
+            document.getElementById('with-black').addEventListener('click', () => {
+                document.getElementById('with-black').classList.add('selected');
+                document.getElementById('no-black').classList.remove('selected');
+                state.blackCardsEnabled = true;
             });
             
             // Start game button
